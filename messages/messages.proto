@@ -1,0 +1,15 @@
+syntax = "proto3";
+package messages;
+option go_package = "gitlab.lrz.de/vss/startercode/startercodeB1/messages";
+
+// Customer
+
+message Customer {
+  uint32 id = 1;
+  string name = 2;
+}
+message NewCustomer { string name = 1; }
+
+message GetCustomer { uint32 id = 1; }
+
+message CustomerNotFound { uint32 id = 1; }

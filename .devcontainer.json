@@ -1,0 +1,5 @@
+{
+    "name": "Verteilte Softwaresysteme --- Blatt 1",
+    "image": "gitlab.lrz.de:5005/hm/dockerhub/go-protoc:latest",
+    "extensions": ["ms-vscode.go"]
+}

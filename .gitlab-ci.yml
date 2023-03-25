@@ -1,0 +1,22 @@
+image: gitlab.lrz.de:5005/hm/dockerhub/go-protoc:latest
+
+stages:
+    - lint
+    - test
+    - apitest
+
+lint:
+    image: gitlab.lrz.de:5005/hm/dockerhub/golangci/golangci-lint
+    stage: lint
+    script:
+        - golangci-lint run
+
+test:
+    stage: test
+    script:
+        - go test -v ./...
+
+customer-apitest:
+    stage: apitest
+    script:
+        - go run apitest/customer/main.go
