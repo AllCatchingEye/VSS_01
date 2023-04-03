@@ -6,7 +6,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/remote"
 
-	"gitlab.lrz.de/vss/startercode/startercodeB1/customer"
+	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/customer"
 )
 
 func main() {

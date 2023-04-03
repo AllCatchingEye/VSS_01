@@ -3,7 +3,7 @@ package customer
 import (
 	"github.com/asynkron/protoactor-go/actor"
 
-	"gitlab.lrz.de/vss/startercode/startercodeB1/messages"
+	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages"
 )
 
 type service struct {
