@@ -24,7 +24,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			ctx.Send(val, msg)
 		} else {
 			//TODO: Error Message or Poison?
-			ctx.Respond(&actor.PoisonPill{})
+			ctx.Respond(UnknownBook{})
 		}
 	case Return:
 		val, ok := state.bookActors[msg.id]
@@ -32,8 +32,13 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			ctx.Send(val, msg)
 		} else {
 			//TODO: Error Message or Poison?
-			ctx.Respond(&actor.PoisonPill{})
+			ctx.Respond(UnknownBook{})
 		}
+	case NewBook:
+		newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
+			return &bookActor{book: msg.Book}
+		}))
+		state.bookActors[msg.Book.id] = newActor
 	default:
 		fmt.Println("got unknown message of type %T\n", msg)
 	}

@@ -3,7 +3,7 @@ package book
 import "github.com/asynkron/protoactor-go/actor"
 
 type informationActor struct {
-	books        []book
+	books        []Book
 	requestsOpen uint32
 	service      *actor.PID
 	client       *actor.PID

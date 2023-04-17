@@ -17,19 +17,26 @@ type ServiceInformationRequest struct {
 }
 
 type ServiceInformationCollected struct {
-	books []book
+	books []Book
 }
 
 type HelperInformationRequest struct {
 }
 
 type HelperInformationCollected struct {
-	books  []book
+	books  []Book
 	client *actor.PID
 }
 
 type ActorInformationResponse struct {
-	response book
+	response Book
+}
+
+type UnknownBook struct {
 }
 
 type ActorInformationRequest struct{}
+
+type NewBook struct {
+	Book Book
+}
