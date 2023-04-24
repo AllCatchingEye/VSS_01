@@ -19,20 +19,19 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 	case HelperInformationCollected:
 		ctx.Send(msg.client, ServiceInformationCollected{books: msg.books})
 	case Borrow:
-		val, ok := state.bookActors[msg.id]
+		val, ok := state.bookActors[msg.Id]
 		if ok {
 			ctx.Send(val, msg)
 		} else {
-			//TODO: Error Message or Poison?
-			ctx.Respond(UnknownBook{})
+			ctx.Respond(ErrorBook{})
 		}
 	case Return:
-		val, ok := state.bookActors[msg.id]
+		val, ok := state.bookActors[msg.Id]
 		if ok {
 			ctx.Send(val, msg)
 		} else {
 			//TODO: Error Message or Poison?
-			ctx.Respond(UnknownBook{})
+			ctx.Respond(ErrorBook{})
 		}
 	case NewBook:
 		newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {

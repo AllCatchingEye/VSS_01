@@ -25,17 +25,17 @@ func (state *bookActor) Receive(ctx actor.Context) {
 		if state.book.available > 0 {
 			state.book.available -= 1
 			state.book.borrowed += 1
-			ctx.Send(msg.client, state.book)
+			ctx.Send(msg.Client, state.book)
 		} else {
-			ctx.Send(msg.client, &actor.PoisonPill{})
+			ctx.Send(msg.Client, &actor.PoisonPill{})
 		}
 	case Return:
 		if state.book.borrowed > 0 {
 			state.book.available += 1
 			state.book.borrowed -= 1
-			ctx.Send(msg.client, state.book)
+			ctx.Send(msg.Client, state.book)
 		} else {
-			ctx.Send(msg.client, &actor.PoisonPill{})
+			ctx.Send(msg.Client, &actor.PoisonPill{})
 		}
 	default:
 		fmt.Printf("got a message of type %T\n", msg)
