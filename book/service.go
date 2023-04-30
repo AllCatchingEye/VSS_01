@@ -15,20 +15,20 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		helper := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 			return &informationHelper{bookActors: state.bookActors}
 		}))
-		ctx.RequestWithCustomSender(helper, msg, msg.client)
+		ctx.RequestWithCustomSender(helper, msg, ctx.Sender())
 	case Borrow:
-		val, ok := state.bookActors[msg.Id]
-		if ok {
-			ctx.RequestWithCustomSender(val, msg, msg.Client)
+		bookId, bookExists := state.bookActors[msg.Id]
+		if bookExists {
+			ctx.RequestWithCustomSender(bookId, msg, ctx.Sender())
 		} else {
-			ctx.Respond(ErrorBook{})
+			ctx.Respond(UnknownBook{})
 		}
 	case Return:
-		val, ok := state.bookActors[msg.Id]
-		if ok {
-			ctx.RequestWithCustomSender(val, msg, msg.Client)
+		bookId, bookExists := state.bookActors[msg.Id]
+		if bookExists {
+			ctx.RequestWithCustomSender(bookId, msg, ctx.Sender())
 		} else {
-			ctx.Respond(ErrorBook{})
+			ctx.Respond(UnknownBook{})
 		}
 	case NewBook:
 		newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
