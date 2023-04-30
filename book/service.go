@@ -11,26 +11,23 @@ type bookServiceActor struct {
 
 func (state *bookServiceActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case ServiceInformationRequest:
+	case GetInformation:
 		helper := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
-			return &informationActor{bookActors: state.bookActors, service: ctx.Self(), client: msg.client}
+			return &informationHelper{bookActors: state.bookActors}
 		}))
-		ctx.Send(helper, HelperInformationRequest{})
-	case HelperInformationCollected:
-		ctx.Send(msg.client, ServiceInformationCollected{books: msg.books})
+		ctx.RequestWithCustomSender(helper, msg, msg.client)
 	case Borrow:
 		val, ok := state.bookActors[msg.Id]
 		if ok {
-			ctx.Send(val, msg)
+			ctx.RequestWithCustomSender(val, msg, msg.Client)
 		} else {
 			ctx.Respond(ErrorBook{})
 		}
 	case Return:
 		val, ok := state.bookActors[msg.Id]
 		if ok {
-			ctx.Send(val, msg)
+			ctx.RequestWithCustomSender(val, msg, msg.Client)
 		} else {
-			//TODO: Error Message or Poison?
 			ctx.Respond(ErrorBook{})
 		}
 	case NewBook:

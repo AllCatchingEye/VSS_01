@@ -3,39 +3,30 @@ package book
 import "github.com/asynkron/protoactor-go/actor"
 
 type Borrow struct {
-	Client *actor.PID
-	Id     uint32
+	Client   *actor.PID
+	ClientId uint32
+	Id       uint32
 }
 
 type Return struct {
-	Client *actor.PID
-	Id     uint32
+	Client   *actor.PID
+	ClientId uint32
+	Id       uint32
 }
 
-type ServiceInformationRequest struct {
+type GetInformation struct {
 	client *actor.PID
 }
 
-type ServiceInformationCollected struct {
-	books []Book
-}
-
-type HelperInformationRequest struct {
-}
-
-type HelperInformationCollected struct {
-	books  []Book
-	client *actor.PID
-}
-
-type ActorInformationResponse struct {
+type Information struct {
 	response Book
 }
 
 type ErrorBook struct {
 }
 
-type ActorInformationRequest struct{}
+type NotAvailable struct {
+}
 
 type NewBook struct {
 	Book Book

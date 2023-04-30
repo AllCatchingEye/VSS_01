@@ -19,23 +19,23 @@ type bookActor struct {
 
 func (state *bookActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case ActorInformationRequest:
-		ctx.Respond(ActorInformationResponse{response: state.book})
+	case GetInformation:
+		ctx.Respond(Information{response: state.book})
 	case Borrow:
 		if state.book.available > 0 {
 			state.book.available -= 1
 			state.book.borrowed += 1
-			ctx.Send(msg.Client, state.book)
+			ctx.Respond(state.book)
 		} else {
-			ctx.Send(msg.Client, &actor.PoisonPill{})
+			ctx.Respond(NotAvailable{})
 		}
 	case Return:
 		if state.book.borrowed > 0 {
 			state.book.available += 1
 			state.book.borrowed -= 1
-			ctx.Send(msg.Client, state.book)
+			ctx.Respond(state.book)
 		} else {
-			ctx.Send(msg.Client, &actor.PoisonPill{})
+			ctx.Respond(NotAvailable{})
 		}
 	default:
 		fmt.Printf("got a message of type %T\n", msg)

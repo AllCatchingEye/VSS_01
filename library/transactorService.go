@@ -13,7 +13,6 @@ type transActor struct {
 func (state *transActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case TransAddCustomer:
-		authClient(ctx, msg.customerService, ctx.Sender().)
 		f := ctx.RequestFuture(msg.customerService, messages.NewCustomer{Name: msg.name}, 50*time.Millisecond)
 		res, err := f.Result()
 		if err == nil {
@@ -34,6 +33,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 			ctx.Send(ctx.Parent(), err)
 		}
 	case TransBorrow:
+		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
 		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 50*time.Millisecond)
 		res, err := f.Result()
 		if err == nil {
@@ -44,6 +44,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 			ctx.Send(ctx.Parent(), err)
 		}
 	case TransReturn:
+		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
 		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 50*time.Millisecond)
 		res, err := f.Result()
 		if err == nil {
