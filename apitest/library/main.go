@@ -105,8 +105,7 @@ func main() {
 	}
 
 	// Test BorrowBook successfully
-	var bookID uint32
-	bookID = 1
+	var bookID uint32 = 1
 	res, err = rootContext.RequestFuture(ls, book.BorrowBook{
 		ClientId: 1,
 		Id:       bookID,
@@ -128,8 +127,7 @@ func main() {
 	}
 
 	// Test BorrowBook error
-	var borrowedBookID uint32
-	borrowedBookID = 12
+	var borrowedBookID uint32 = 12
 	res, err = rootContext.RequestFuture(ls, book.BorrowBook{
 		ClientId: 1,
 		Id:       borrowedBookID,
@@ -145,7 +143,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be bool"))
 	}
 
-	if borrowedErrorResponse != false {
+	if borrowedErrorResponse {
 		panic(fmt.Errorf("book with id %d could be borrowed successfully but shouldn't", bookID))
 	}
 
@@ -164,7 +162,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be bool"))
 	}
 
-	if returnResponse != true {
+	if !returnResponse {
 		panic(fmt.Errorf("book with id %d couldn't be returned successfully", bookID))
 	}
 
@@ -184,7 +182,7 @@ func main() {
 		panic(fmt.Errorf("go wrong message type. Should be %T", book.Book{}))
 	}
 
-	if returnErrorResponse != false {
+	if returnErrorResponse {
 		panic(fmt.Errorf("book with id %d could be returned successfully but shouldn't", bookID))
 	}
 

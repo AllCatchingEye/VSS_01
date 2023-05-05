@@ -43,7 +43,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
 	}
 
-	if resBook != false {
+	if resBook {
 		panic(fmt.Errorf("Shoudn't be able to borrow when the book is unavailable"))
 	}
 
@@ -60,7 +60,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
 	}
 
-	if resBook != false {
+	if resBook {
 		panic(fmt.Errorf("Shoudn't be able to borrow book"))
 	}
 
@@ -97,7 +97,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
 	}
 
-	if resBook != false {
+	if resBook {
 		panic(fmt.Errorf("Should be able to return book that has all exemplars already available"))
 	}
 
