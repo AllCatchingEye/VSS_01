@@ -17,7 +17,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		newBook := Book{
 			id:        1,
 			title:     "Worm",
-			author:    []string{"Wildbow"},
+			author:    []string{"Wild bow"},
 			available: 2,
 			borrowed:  3,
 		}
@@ -47,7 +47,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		// checks if book exists and requests 'Return'
 		bookId, bookExists := state.bookActors[msg.Id]
 		if bookExists {
-			// TODO: sendet das buch selber dass es nicht ausleihbar ist? also muss das der bookservice nicht wissen und dann zu customer?
+			// TODO: sendet das buch selber dass es nicht ausleihbar ist? also muss das der book service nicht wissen und dann zu customer?
 			ctx.RequestWithCustomSender(bookId, BorrowBook{Id: msg.Id, ClientId: msg.ClientId}, ctx.Sender())
 			fmt.Println("Book Service: Return book to actor")
 		} else {
