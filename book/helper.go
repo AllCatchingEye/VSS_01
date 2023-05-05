@@ -1,6 +1,10 @@
 package book
 
-import "github.com/asynkron/protoactor-go/actor"
+import (
+	"fmt"
+
+	"github.com/asynkron/protoactor-go/actor"
+)
 
 type informationHelper struct {
 	books        []Book
@@ -16,11 +20,14 @@ func (state informationHelper) Receive(ctx actor.Context) {
 			state.requestsOpen += 1
 			ctx.Request(state.bookActors[id], msg)
 		}
+		fmt.Println("Helper: Requested all information")
 	case Information:
 		state.requestsOpen -= 1
 		state.books = append(state.books, msg.response)
 
+		fmt.Println("Helper: Received information")
 		if state.requestsOpen < 1 {
+			fmt.Println("Helper: Received all requested information")
 			ctx.Respond(state.books)
 			ctx.Poison(ctx.Self())
 		}

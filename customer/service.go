@@ -17,6 +17,8 @@ func NewService() actor.Actor {
 
 func (cs *service) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
+	case *actor.Started:
+		cs.addNewCustomer("Bob")
 	case *messages.NewCustomer:
 		name := msg.GetName()
 		id := cs.addNewCustomer(name)
