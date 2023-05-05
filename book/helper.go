@@ -14,14 +14,14 @@ type informationHelper struct {
 
 func (state informationHelper) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case GetInformation:
+	case GetInformationHelper:
 		state.requestsOpen = 0
 		for id, _ := range state.bookActors {
 			state.requestsOpen += 1
-			ctx.Request(state.bookActors[id], msg)
+			ctx.Request(state.bookActors[id], GetInformationOfBook{})
 		}
 		fmt.Println("Helper: Requested all information")
-	case Information:
+	case InformationForHelper:
 		state.requestsOpen -= 1
 		state.books = append(state.books, msg.response)
 
@@ -32,4 +32,17 @@ func (state informationHelper) Receive(ctx actor.Context) {
 			ctx.Poison(ctx.Self())
 		}
 	}
+}
+
+// #####################################
+// #        Messages for Helper        #
+// #####################################
+
+// GetInformationHelper message to collect information about all books for helper actor
+type GetInformationHelper struct {
+}
+
+// InformationForHelper message holding information about single book for helper actor
+type InformationForHelper struct {
+	response Book
 }
