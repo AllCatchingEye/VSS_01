@@ -16,16 +16,16 @@ func (state *transActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		fmt.Println("Trans actor: Initilized")
+	case *actor.Stopping:
+		ctx.Send(ctx.Parent(), true)
 	case TransAddCustomer:
 		f := ctx.RequestFuture(msg.customerService, messages.NewCustomer{Name: msg.name}, 50*time.Millisecond)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			ctx.Send(ctx.Parent(), res)
 			fmt.Println("Trans Actor: Added customer")
 		} else {
 			ctx.Respond(err)
-			ctx.Send(ctx.Parent(), err)
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to add customer")
 		}
 	case TransNewBook:
@@ -33,11 +33,9 @@ func (state *transActor) Receive(ctx actor.Context) {
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			ctx.Send(ctx.Parent(), res)
 			fmt.Println("Trans Actor: Added new book")
 		} else {
 			ctx.Respond(err)
-			ctx.Send(ctx.Parent(), err)
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to add book")
 		}
 	case TransBorrow:
@@ -46,11 +44,9 @@ func (state *transActor) Receive(ctx actor.Context) {
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			ctx.Send(ctx.Parent(), res)
 			fmt.Println("Trans Actor: Borrowed book")
 		} else {
 			ctx.Respond(err)
-			ctx.Send(ctx.Parent(), err)
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to borrow book")
 		}
 	case TransReturn:
@@ -59,11 +55,9 @@ func (state *transActor) Receive(ctx actor.Context) {
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			ctx.Send(ctx.Parent(), res)
 			fmt.Println("Trans Actor: Returned book")
 		} else {
 			ctx.Respond(err)
-			ctx.Send(ctx.Parent(), err)
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to return book")
 		}
 	default:
@@ -85,4 +79,35 @@ func authClient(ctx actor.Context, customerService *actor.PID, clientId uint32) 
 	default:
 		return true
 	}
+}
+
+// #####################################
+// #      Messages for Transactor      #
+// #####################################
+
+// TransAddCustomer message for transactor to add a new customer
+type TransAddCustomer struct {
+	name            string
+	customerService *actor.PID
+}
+
+// TransNewBook message for transactor to add a new book
+type TransNewBook struct {
+	bookService     *actor.PID
+	customerService *actor.PID
+	book            book.Book
+}
+
+// TransBorrow message for transactor to borrow a specific book
+type TransBorrow struct {
+	bookService     *actor.PID
+	customerService *actor.PID
+	bookMsg         book.BorrowBook
+}
+
+// TransReturn message for transactor to return a specific book
+type TransReturn struct {
+	bookService     *actor.PID
+	customerService *actor.PID
+	bookMsg         book.ReturnBook
 }

@@ -39,14 +39,45 @@ func (state *bookActor) Receive(ctx actor.Context) {
 			state.book.available += 1
 			state.book.borrowed -= 1
 			fmt.Println("Book Actor: Book returned")
-			ctx.Respond(state.book)
+			ctx.Respond(true)
 		} else {
 			fmt.Println("Book Actor: Coudn't return, no book was borrowed")
-			ctx.Respond(NotAvailable{})
+			ctx.Respond(false)
 		}
 	default:
 		fmt.Printf("got a message of type %T\n", msg)
 	}
+}
+
+func CreateNewBook(id uint32, author []string, title string, available uint32, borrowed uint32) Book {
+	return Book{
+		id:        id,
+		author:    author,
+		title:     title,
+		available: available,
+		borrowed:  borrowed,
+	}
+}
+
+func (x *Book) GetId() uint32 {
+	if x != nil {
+		return x.id
+	}
+	return 0
+}
+
+func (x *Book) GetTitle() string {
+	if x != nil {
+		return x.title
+	}
+	return ""
+}
+
+func (x *Book) GetAuthors() []string {
+	if x != nil {
+		return x.author
+	}
+	return []string{}
 }
 
 // #####################################

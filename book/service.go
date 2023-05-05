@@ -17,7 +17,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		newBook := Book{
 			id:        1,
 			title:     "Worm",
-			author:    []string{"Wild bow"},
+			author:    []string{"Wildbow"},
 			available: 2,
 			borrowed:  3,
 		}
@@ -33,7 +33,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		}))
 		ctx.RequestWithCustomSender(helper, GetInformationHelper{}, ctx.Sender())
 		fmt.Println("Book Service: Dispatch information helper")
-	case Borrow:
+	case ReturnBook:
 		// checks if book exists and requests 'Borrow'
 		bookId, bookExists := state.bookActors[msg.Id]
 		if bookExists {
@@ -43,11 +43,10 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			fmt.Println("Book Service: Book not known")
 			ctx.Respond(UnknownBook{})
 		}
-	case Return:
+	case BorrowBook:
 		// checks if book exists and requests 'Return'
 		bookId, bookExists := state.bookActors[msg.Id]
 		if bookExists {
-			// TODO: sendet das buch selber dass es nicht ausleihbar ist? also muss das der book service nicht wissen und dann zu customer?
 			ctx.RequestWithCustomSender(bookId, BorrowBook{Id: msg.Id, ClientId: msg.ClientId}, ctx.Sender())
 			fmt.Println("Book Service: Return book to actor")
 		} else {
@@ -55,32 +54,31 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			ctx.Respond(UnknownBook{})
 		}
 	case NewBook:
-		// TODO: sollte hier nicht das Buch erst erstellt werden? lso hier die einzelnen attribute übergeben werden?
-		newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
-			return &bookActor{book: msg.Book}
-		}))
-		state.bookActors[msg.Book.id] = newActor
-		fmt.Println("Book Service: Added new book")
+		_, bookExists := state.bookActors[msg.Book.id]
+		if !bookExists {
+			newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
+				return &bookActor{book: msg.Book}
+			}))
+			state.bookActors[msg.Book.id] = newActor
+			fmt.Println("Book Service: Added new book")
+			ctx.Respond(true)
+		} else {
+			fmt.Println("Book Service: Coudnt add new book, book already exists with given id")
+			ctx.Respond(false)
+		}
+
 	default:
 		fmt.Println("got unknown message of type %T\n", msg)
 	}
 }
 
+func NewBookService() actor.Actor {
+	return &bookServiceActor{}
+}
+
 // #####################################
 // #     Messages for Book Service     #
 // #####################################
-
-// Borrow message to borrow a book
-type Borrow struct {
-	ClientId uint32
-	Id       uint32
-}
-
-// Return message to return a book
-type Return struct {
-	ClientId uint32
-	Id       uint32
-}
 
 // GetInformation message to collect information about all books
 type GetInformation struct {
