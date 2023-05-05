@@ -77,14 +77,14 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
 	}
 
-	if resBook != true {
+	if !resBook {
 		panic(fmt.Errorf("Should be able to return book"))
 	}
 
 	// Test return too much
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 
 	if err != nil {
@@ -114,7 +114,7 @@ func main() {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
 	}
 
-	if resBook != false {
+	if resBook {
 		panic(fmt.Errorf("Should be able to return book that doesnt exist"))
 	}
 

@@ -14,9 +14,10 @@ type informationHelper struct {
 
 func (state informationHelper) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case GetInformationHelper:
+	case *actor.Started:
 		state.requestsOpen = 0
-		for id, _ := range state.bookActors {
+	case GetInformationHelper:
+		for id := range state.bookActors {
 			state.requestsOpen += 1
 			ctx.Request(state.bookActors[id], GetInformationOfBook{})
 		}

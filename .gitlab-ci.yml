@@ -20,3 +20,13 @@ customer-apitest:
     stage: apitest
     script:
         - go run apitest/customer/main.go
+
+book-apitest:
+    stage: apitest
+    script:
+        - go run apitest/book/main.go
+
+library-apitest:
+    stage: apitest
+    script:
+        - go run apitest/library/main.go
