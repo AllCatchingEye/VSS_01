@@ -19,7 +19,7 @@ func main() {
 	cs := actor.NewPID("127.0.0.1:9010", "customer")
 	bs := actor.NewPID("127.0.0.1:9011", "bookServiceActor")
 	ls := actor.NewPID("127.0.0.1:9012", "LibraryService")
-	rootContext.Send(ls, library.LibAddServices{cs, bs})
+	rootContext.Send(ls, library.LibAddServices{Cs: cs, Bs: bs})
 
 	res, err := rootContext.RequestFuture(ls, book.BorrowBook{
 		ClientId: 1,
