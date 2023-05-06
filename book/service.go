@@ -67,9 +67,8 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			fmt.Println("Book Service: Coudnt add new book, book already exists with given id")
 			ctx.Respond(false)
 		}
-
 	default:
-		fmt.Println("got unknown message of type %T\n", msg)
+		print("Unknown message. %T\n", msg)
 	}
 }
 

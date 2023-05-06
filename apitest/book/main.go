@@ -31,7 +31,7 @@ func main() {
 	}
 
 	// Test Borrow too much
-	rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.Send(bs, book.BorrowBook{ClientId: 1, Id: 1})
 	res, err = rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
 
 	if err != nil {
@@ -83,11 +83,11 @@ func main() {
 	}
 
 	// Test return too much
-	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
-	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
+	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
+	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
+	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
+	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
 	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 
 	if err != nil {
