@@ -17,6 +17,16 @@ type LibraryService struct {
 
 func (state *LibraryService) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
+	case *actor.Started:
+		state.transActorMap = make(map[*actor.PID]bool)
+	case LibAddServices:
+		if msg.Bs != nil && msg.Cs != nil {
+			state.BookService = msg.Bs
+			state.CustomerService = msg.Cs
+			ctx.Respond(true)
+		} else {
+			ctx.Respond(false)
+		}
 	case LibAddCustomer:
 		ctx.RequestWithCustomSender(state.spawnTransActor(ctx), TransAddCustomer{
 			name:            msg.Name,
@@ -72,9 +82,7 @@ func (state *LibraryService) spawnTransActor(ctx actor.Context) *actor.PID {
 		}
 	}
 	// If no free transactor is found create a new one and append it to transActors
-	trans := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
-		return &transActor{}
-	}))
+	trans := ctx.Spawn(actor.PropsFromProducer(NewTransActor))
 	state.transActors = append(state.transActors, trans)
 	state.transActorMap[trans] = true // running
 	state.runningTransActors++
@@ -90,6 +98,10 @@ func (state *LibraryService) clearExcessiveTransactors() {
 	}
 }
 
+func NewLibraryService() actor.Actor {
+	return &LibraryService{}
+}
+
 // #####################################
 // #       Messages for Library        #
 // #####################################
@@ -97,4 +109,9 @@ func (state *LibraryService) clearExcessiveTransactors() {
 // TransAddCustomer message for transactor to add a new customer
 type LibAddCustomer struct {
 	Name string
+}
+
+type LibAddServices struct {
+	Cs *actor.PID
+	Bs *actor.PID
 }

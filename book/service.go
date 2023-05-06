@@ -24,6 +24,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 		bookActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 			return &bookActor{book: newBook}
 		}))
+		state.bookActors = make(map[uint32]*actor.PID)
 		state.bookActors[newBook.id] = bookActor
 		fmt.Println("Book Service: Initialized")
 	case GetInformation:
@@ -41,7 +42,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			ctx.RequestWithCustomSender(bookId, ReturnBook{Id: msg.Id, ClientId: msg.ClientId}, ctx.Sender())
 		} else {
 			fmt.Println("Book Service: Book not known")
-			ctx.Respond(UnknownBook{})
+			ctx.Respond(false)
 		}
 	case BorrowBook:
 		// checks if book exists and requests 'Return'
@@ -51,7 +52,7 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 			fmt.Println("Book Service: Return book to actor")
 		} else {
 			fmt.Println("Book Service: Book not known")
-			ctx.Respond(UnknownBook{})
+			ctx.Respond(false)
 		}
 	case NewBook:
 		_, bookExists := state.bookActors[msg.Book.id]
@@ -87,6 +88,7 @@ type GetInformation struct {
 // Information message holding information about single book
 type Information struct {
 	response Book
+	actorPID *actor.PID
 }
 
 // UnknownBook message if book does not exist

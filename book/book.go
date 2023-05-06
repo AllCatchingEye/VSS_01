@@ -23,7 +23,7 @@ func (state *bookActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case GetInformationOfBook:
 		fmt.Println("Book Actor: Information requested")
-		ctx.Respond(Information{response: state.book})
+		ctx.Respond(Information{response: state.book, actorPID: ctx.Self()})
 	case BorrowBook:
 		if state.book.available > 0 {
 			state.book.available -= 1
@@ -32,7 +32,7 @@ func (state *bookActor) Receive(ctx actor.Context) {
 			ctx.Respond(state.book)
 		} else {
 			fmt.Println("Book Actor: Coudn't borrow, no book available right now")
-			ctx.Respond(NotAvailable{})
+			ctx.Respond(false)
 		}
 	case ReturnBook:
 		if state.book.borrowed > 0 {

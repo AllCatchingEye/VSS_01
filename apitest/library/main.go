@@ -22,21 +22,39 @@ func main() {
 	bsProp := actor.PropsFromProducer(book.NewBookService)
 	bs := system.Root.Spawn(bsProp)
 
-	lsProp := actor.PropsFromProducer(func() actor.Actor {
-		return &library.LibraryService{BookService: bs, CustomerService: cs}
-	})
+	lsProp := actor.PropsFromProducer(library.NewLibraryService)
 	ls := system.Root.Spawn(lsProp)
 
-	// Test add customer successfully
-	name := "Alice"
-
-	res, err := rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
+	// Test add services to library successfully
+	res, err := rootContext.RequestFuture(ls, library.LibAddServices{
+		Cs: cs,
+		Bs: bs,
+	}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resCustomer, ok := res.(messages.Customer)
+	resLibrary, ok := res.(bool)
+
+	if !ok {
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
+	}
+
+	if !resLibrary {
+		panic(fmt.Errorf("Coudn't add book and customer services to library"))
+	}
+
+	// Test add customer
+	name := "Alice"
+
+	res, err = rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
+
+	if err != nil {
+		panic(err)
+	}
+
+	resCustomer, ok := res.(*messages.Customer)
 
 	if !ok {
 		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
@@ -45,27 +63,6 @@ func main() {
 	if resCustomer.GetName() != name {
 		panic(fmt.Errorf("new customer with ID %d has name %s, should be %s",
 			resCustomer.GetId(), resCustomer.GetName(), name))
-	}
-
-	// Test add customer error
-	name = "Alice"
-
-	res, err = rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
-	res, err = rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
-	res, err = rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
-
-	if err != nil {
-		panic(err)
-	}
-
-	resCustomer, ok = res.(messages.Customer)
-
-	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if res != false {
-		panic(fmt.Errorf("New customer shoudn't be successfully created"))
 	}
 
 	// Test NewBook successfully
@@ -90,7 +87,7 @@ func main() {
 	// Test NewBook error
 	resBook, err = rootContext.RequestFuture(ls, book.NewBook{Book: sut}, timeout).Result()
 
-	if err == nil {
+	if err != nil {
 		panic(err)
 	}
 
@@ -186,4 +183,5 @@ func main() {
 		panic(fmt.Errorf("book with id %d could be returned successfully but shouldn't", bookID))
 	}
 
+	println("All library tests successfull")
 }

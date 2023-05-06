@@ -15,11 +15,11 @@ type transActor struct {
 func (state *transActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
-		fmt.Println("Trans actor: Initilized")
+		fmt.Println("Trans actor: Initialized")
 	case *actor.Stopping:
 		ctx.Send(ctx.Parent(), true)
 	case TransAddCustomer:
-		f := ctx.RequestFuture(msg.customerService, messages.NewCustomer{Name: msg.name}, 50*time.Millisecond)
+		f := ctx.RequestFuture(msg.customerService, &messages.NewCustomer{Name: msg.name}, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
@@ -29,7 +29,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to add customer")
 		}
 	case TransNewBook:
-		f := ctx.RequestFuture(msg.bookService, book.NewBook{Book: msg.book}, 50*time.Millisecond)
+		f := ctx.RequestFuture(msg.bookService, book.NewBook{Book: msg.book}, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
@@ -40,7 +40,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 		}
 	case TransBorrow:
 		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
-		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 50*time.Millisecond)
+		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
@@ -51,7 +51,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 		}
 	case TransReturn:
 		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
-		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 50*time.Millisecond)
+		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
@@ -66,7 +66,7 @@ func (state *transActor) Receive(ctx actor.Context) {
 }
 
 func authClient(ctx actor.Context, customerService *actor.PID, clientId uint32) bool {
-	f := ctx.RequestFuture(customerService, messages.GetCustomer{Id: clientId}, 50*time.Millisecond)
+	f := ctx.RequestFuture(customerService, &messages.GetCustomer{Id: clientId}, 5*time.Second)
 	res, err := f.Result()
 	if err != nil {
 		fmt.Println("Trans Actor: Something went wrong while trying to check for customer")
@@ -79,6 +79,10 @@ func authClient(ctx actor.Context, customerService *actor.PID, clientId uint32) 
 	default:
 		return true
 	}
+}
+
+func NewTransActor() actor.Actor {
+	return &transActor{}
 }
 
 // #####################################

@@ -1,4 +1,4 @@
-package book
+package main
 
 import (
 	"fmt"
@@ -31,6 +31,7 @@ func main() {
 	}
 
 	// Test Borrow too much
+	rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
 	res, err = rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
 
 	if err != nil {
@@ -82,6 +83,8 @@ func main() {
 	}
 
 	// Test return too much
+	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
 	rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
@@ -140,4 +143,6 @@ func main() {
 	if resInfo[0].GetTitle() != "Worm" {
 		panic(fmt.Errorf("book coming from info should have title %s, but has title %s", "Worm", resInfo[0].GetTitle()))
 	}
+
+	println("All book tests successfull")
 }
