@@ -21,7 +21,12 @@ func main() {
 	remoter := remote.NewRemote(system, config)
 	remoter.Start()
 
+	cs := actor.NewPID("127.0.0.1:9010", "customer")
+	bs := actor.NewPID("127.0.0.1:9011", "bookServiceActor")
+
 	// spawn the customer service
-	props := actor.PropsFromProducer(library.NewLibraryService)
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return library.NewLibraryService(bs, cs)
+	})
 	_, _ = system.Root.SpawnNamed(props, "LibraryService")
 }

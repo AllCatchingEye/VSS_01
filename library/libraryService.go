@@ -2,72 +2,74 @@ package library
 
 import (
 	"fmt"
-
 	"github.com/asynkron/protoactor-go/actor"
-	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/book"
+	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages"
 )
 
 type LibraryService struct {
-	BookService        *actor.PID
-	CustomerService    *actor.PID
-	transActors        []*actor.PID
-	transActorMap      map[*actor.PID]bool // true: transactor is running
-	runningTransActors int
+	BookService           *actor.PID
+	CustomerService       *actor.PID
+	transActors           []*actor.PID
+	transActorMap         map[*actor.PID]bool // true: transactor is running
+	transActorCustomerMap map[*actor.PID]uint32
+	runningTransActors    int
 }
 
 func (state *LibraryService) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		state.transActorMap = make(map[*actor.PID]bool)
-	case LibAddServices:
-		if msg.Bs != nil && msg.Cs != nil {
-			state.BookService = msg.Bs
-			state.CustomerService = msg.Cs
-			ctx.Respond(true)
-		} else {
-			ctx.Respond(false)
-		}
-	case LibAddCustomer:
-		ctx.RequestWithCustomSender(state.spawnTransActor(ctx), TransAddCustomer{
+		state.transActorCustomerMap = make(map[*actor.PID]uint32)
+	case *messages.LibAddCustomer:
+		ctx.RequestWithCustomSender(state.spawnTransActor(ctx, 0), TransAddCustomer{
 			name:            msg.Name,
 			customerService: state.CustomerService,
 		}, ctx.Sender())
 		fmt.Println("Library Service: New customer to add")
-	case book.NewBook:
-		ctx.RequestWithCustomSender(state.spawnTransActor(ctx), TransNewBook{
+	case *messages.NewBook:
+		ctx.RequestWithCustomSender(state.spawnTransActor(ctx, 0), TransNewBook{
 			bookService:     state.BookService,
 			customerService: state.CustomerService,
-			book:            msg.Book,
+			newBookMessage:  msg,
 		}, ctx.Sender())
-		fmt.Println("Library Service: New book to add")
-	case book.BorrowBook:
-		ctx.RequestWithCustomSender(state.spawnTransActor(ctx), TransBorrow{
-			bookService:     state.BookService,
-			customerService: state.CustomerService,
-			bookMsg:         msg,
-		}, ctx.Sender())
-		fmt.Println("Library Service: Book borrow requested")
-	case book.ReturnBook:
-		ctx.RequestWithCustomSender(state.spawnTransActor(ctx), TransReturn{
-			bookService:     state.BookService,
-			customerService: state.CustomerService,
-			bookMsg:         msg,
-		}, ctx.Sender())
-		fmt.Println("Library Service: Book return requested")
-	case bool:
-		if msg {
-			state.runningTransActors--
-			state.transActorMap[ctx.Sender()] = false // not running anymore
+		fmt.Println("Library Service: New newBookMessage to add")
+	case *messages.Borrow:
+		customer := msg.ClientId
+		if state.checkTransactorClientMap(customer) {
+			ctx.RequestWithCustomSender(state.spawnTransActor(ctx, customer), TransBorrow{
+				bookService:     state.BookService,
+				customerService: state.CustomerService,
+				borrowMessage:   msg,
+			}, ctx.Sender())
+			fmt.Println("Library Service: Book borrow requested")
 		} else {
-			fmt.Printf("Transactor %s: task failure\n", ctx.Sender().String())
+			ctx.Respond(&messages.SameCustomer{})
 		}
+	case *messages.Return:
+		customer := msg.ClientId
+		if state.checkTransactorClientMap(customer) {
+			ctx.RequestWithCustomSender(state.spawnTransActor(ctx, customer), TransReturn{
+				bookService:     state.BookService,
+				customerService: state.CustomerService,
+				returnMessage:   msg,
+			}, ctx.Sender())
+			fmt.Println("Library Service: Book return requested")
+		} else {
+			ctx.Respond(&messages.SameCustomer{})
+		}
+	case TransFinished:
+		fmt.Println("Entering library received transfinished")
+		state.runningTransActors--
+		state.transActorMap[ctx.Sender()] = false // not running anymore
+		delete(state.transActorCustomerMap, msg.sender)
+		fmt.Println("deleted customer from map")
 	default:
 		print("Unknown message. %T\n", msg)
 	}
 }
 
 // spawns new Transactor or returns existing and free transactor
-func (state *LibraryService) spawnTransActor(ctx actor.Context) *actor.PID {
+func (state *LibraryService) spawnTransActor(ctx actor.Context, customer uint32) *actor.PID {
 	// clearng exessive transactors
 	inactiveTransactors := len(state.transActors) - state.runningTransActors
 	if inactiveTransactors >= 3 {
@@ -77,6 +79,9 @@ func (state *LibraryService) spawnTransActor(ctx actor.Context) *actor.PID {
 	for _, PIDid := range state.transActors {
 		if !state.transActorMap[PIDid] {
 			state.transActorMap[PIDid] = true // running again
+			if customer != 0 {
+				state.transActorCustomerMap[PIDid] = customer
+			}
 			state.runningTransActors++
 			return PIDid
 		}
@@ -85,6 +90,9 @@ func (state *LibraryService) spawnTransActor(ctx actor.Context) *actor.PID {
 	trans := ctx.Spawn(actor.PropsFromProducer(NewTransActor))
 	state.transActors = append(state.transActors, trans)
 	state.transActorMap[trans] = true // running
+	if customer != 0 {
+		state.transActorCustomerMap[trans] = customer
+	}
 	state.runningTransActors++
 	return trans
 }
@@ -94,24 +102,26 @@ func (state *LibraryService) clearExcessiveTransactors() {
 	for _, PIDid := range state.transActors {
 		if state.transActorMap[PIDid] {
 			delete(state.transActorMap, PIDid)
+			delete(state.transActorCustomerMap, PIDid)
 		}
 	}
 }
 
-func NewLibraryService() actor.Actor {
-	return &LibraryService{}
+// checks if there is a transactor working for this client
+func (state *LibraryService) checkTransactorClientMap(customerId uint32) bool {
+	for _, trans := range state.transActors {
+		if state.transActorCustomerMap[trans] == customerId {
+			return false
+		}
+	}
+	return true
 }
 
-// #####################################
-// #       Messages for Library        #
-// #####################################
-
-// TransAddCustomer message for transactor to add a new customer
-type LibAddCustomer struct {
-	Name string
+func NewLibraryService(bs *actor.PID, cs *actor.PID) actor.Actor {
+	println("Creating new library service")
+	return &LibraryService{BookService: bs, CustomerService: cs}
 }
 
-type LibAddServices struct {
-	Cs *actor.PID
-	Bs *actor.PID
+type TransFinished struct {
+	sender *actor.PID
 }

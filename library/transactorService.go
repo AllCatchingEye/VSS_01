@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/book"
 	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages"
 )
 
@@ -16,8 +15,6 @@ func (state *transActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		fmt.Println("Trans actor: Initialized")
-	case *actor.Stopping:
-		ctx.Send(ctx.Parent(), true)
 	case TransAddCustomer:
 		f := ctx.RequestFuture(msg.customerService, &messages.NewCustomer{Name: msg.name}, 5*time.Second)
 		res, err := f.Result()
@@ -28,38 +25,44 @@ func (state *transActor) Receive(ctx actor.Context) {
 			ctx.Respond(err)
 			fmt.Println("Trans Actor: Error: Something went wrong while trying to add customer")
 		}
+		ctx.Send(ctx.Parent(), TransFinished{ctx.Self()})
 	case TransNewBook:
-		f := ctx.RequestFuture(msg.bookService, book.NewBook{Book: msg.book}, 5*time.Second)
+		f := ctx.RequestFuture(msg.bookService, msg.newBookMessage, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			fmt.Println("Trans Actor: Added new book")
+			fmt.Println("Trans Actor: Added new newBookMessage")
 		} else {
 			ctx.Respond(err)
-			fmt.Println("Trans Actor: Error: Something went wrong while trying to add book")
+			fmt.Println("Trans Actor: Error: Something went wrong while trying to add newBookMessage")
 		}
+		ctx.Send(ctx.Parent(), TransFinished{ctx.Self()})
 	case TransBorrow:
-		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
-		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 5*time.Second)
+		fmt.Println("Entering trans borrow")
+		authClient(ctx, msg.customerService, msg.borrowMessage.ClientId)
+		f := ctx.RequestFuture(msg.bookService, msg.borrowMessage, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			fmt.Println("Trans Actor: Borrowed book")
+			fmt.Println("Trans Actor: Borrowed newBookMessage")
 		} else {
 			ctx.Respond(err)
-			fmt.Println("Trans Actor: Error: Something went wrong while trying to borrow book")
+			fmt.Println("Trans Actor: Error: Something went wrong while trying to borrow newBookMessage")
 		}
+		ctx.Send(ctx.Parent(), TransFinished{ctx.Self()})
+		fmt.Println("Finished trans borrow")
 	case TransReturn:
-		authClient(ctx, msg.customerService, msg.bookMsg.ClientId)
-		f := ctx.RequestFuture(msg.bookService, msg.bookMsg, 5*time.Second)
+		authClient(ctx, msg.customerService, msg.returnMessage.ClientId)
+		f := ctx.RequestFuture(msg.bookService, msg.returnMessage, 5*time.Second)
 		res, err := f.Result()
 		if err == nil {
 			ctx.Respond(res)
-			fmt.Println("Trans Actor: Returned book")
+			fmt.Println("Trans Actor: Returned newBookMessage")
 		} else {
 			ctx.Respond(err)
-			fmt.Println("Trans Actor: Error: Something went wrong while trying to return book")
+			fmt.Println("Trans Actor: Error: Something went wrong while trying to return newBookMessage")
 		}
+		ctx.Send(ctx.Parent(), TransFinished{ctx.Self()})
 	default:
 		print("Error occured by handling following message: %T\n", msg)
 	}
@@ -95,23 +98,23 @@ type TransAddCustomer struct {
 	customerService *actor.PID
 }
 
-// TransNewBook message for transactor to add a new book
+// TransNewBook message for transactor to add a new newBookMessage
 type TransNewBook struct {
 	bookService     *actor.PID
 	customerService *actor.PID
-	book            book.Book
+	newBookMessage  *messages.NewBook
 }
 
-// TransBorrow message for transactor to borrow a specific book
+// TransBorrow message for transactor to borrow a specific newBookMessage
 type TransBorrow struct {
 	bookService     *actor.PID
 	customerService *actor.PID
-	bookMsg         book.BorrowBook
+	borrowMessage   *messages.Borrow
 }
 
-// TransReturn message for transactor to return a specific book
+// TransReturn message for transactor to return a specific newBookMessage
 type TransReturn struct {
 	bookService     *actor.PID
 	customerService *actor.PID
-	bookMsg         book.ReturnBook
+	returnMessage   *messages.Return
 }

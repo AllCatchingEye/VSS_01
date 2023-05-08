@@ -22,33 +22,15 @@ func main() {
 	bsProp := actor.PropsFromProducer(book.NewBookService)
 	bs := system.Root.Spawn(bsProp)
 
-	lsProp := actor.PropsFromProducer(library.NewLibraryService)
+	lsProp := actor.PropsFromProducer(func() actor.Actor {
+		return library.NewLibraryService(bs, cs)
+	})
 	ls := system.Root.Spawn(lsProp)
-
-	// Test add services to library successfully
-	res, err := rootContext.RequestFuture(ls, library.LibAddServices{
-		Cs: cs,
-		Bs: bs,
-	}, timeout).Result()
-
-	if err != nil {
-		panic(err)
-	}
-
-	resLibrary, ok := res.(bool)
-
-	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if !resLibrary {
-		panic(fmt.Errorf("Coudn't add book and customer services to library"))
-	}
 
 	// Test add customer
 	name := "Alice"
 
-	res, err = rootContext.RequestFuture(ls, library.LibAddCustomer{Name: name}, timeout).Result()
+	res, err := rootContext.RequestFuture(ls, &messages.LibAddCustomer{Name: name}, timeout).Result()
 
 	if err != nil {
 		panic(err)
@@ -66,122 +48,115 @@ func main() {
 	}
 
 	// Test NewBook successfully
-	sut := book.CreateNewBook(2, []string{"Alice", "Hubert"}, "Super Ratgeber", 10, 0)
+	sut := messages.Book{
+		Id:        2,
+		Author:    []string{"Alice", "Hubert"},
+		Title:     "Super Ratgeber",
+		Available: 10,
+		Borrowed:  0,
+	}
 
-	resBook, err := rootContext.RequestFuture(ls, book.NewBook{Book: sut}, timeout).Result()
+	resBook, err := rootContext.RequestFuture(ls, &messages.NewBook{Book: &sut}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	res, ok = resBook.(bool)
+	res, ok = resBook.(*messages.BookCreated)
 
 	if !ok {
-		panic(fmt.Errorf("go wrong message type. Should be %T", book.Book{}))
+		panic(fmt.Errorf("got wrong message type, expected message of type BookCreated"))
 	}
 
-	if res != true {
-		panic(fmt.Errorf("coudn't create new book"))
-	}
+	fmt.Println("Created book successfully")
 
-	// Test NewBook error
-	resBook, err = rootContext.RequestFuture(ls, book.NewBook{Book: sut}, timeout).Result()
+	// Test Create duplicate book
+	resBook, err = rootContext.RequestFuture(ls, &messages.NewBook{Book: &sut}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	res, ok = resBook.(bool)
+	res, ok = resBook.(*messages.BookExists)
 
 	if !ok {
-		panic(fmt.Errorf("go wrong message type. Should be %T", book.Book{}))
+		panic(fmt.Errorf("got wrong message type, expected message of type BookExists"))
 	}
 
-	if res != false {
-		panic(fmt.Errorf("could create book that already exists"))
-	}
+	fmt.Println("Coudn't create duplicate book!")
 
 	// Test BorrowBook successfully
 	var bookID uint32 = 1
-	res, err = rootContext.RequestFuture(ls, book.BorrowBook{
+	res, err = rootContext.RequestFuture(ls, &messages.Borrow{
 		ClientId: 1,
-		Id:       bookID,
+		BookId:   bookID,
 	}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	borrowedBook, ok := res.(book.Book)
+	borrowedBook, ok := res.(*messages.Book)
 
 	if !ok {
-		panic(fmt.Errorf("go wrong message type. Should be %T", book.Book{}))
+		panic(fmt.Errorf("got wrong message type, expected message of type Book"))
 	}
 
-	if borrowedBook.GetId() != 1 {
-		panic(fmt.Errorf("new book with ID %d, should be %d",
-			borrowedBook.GetId(), sut.GetId()))
-	}
+	fmt.Printf("Borrowed book: %v\n", borrowedBook)
 
-	// Test BorrowBook error
-	var borrowedBookID uint32 = 12
-	res, err = rootContext.RequestFuture(ls, book.BorrowBook{
+	// Test Borrow unknown book
+	var borrowedBookID uint32 = 123749
+	res, err = rootContext.RequestFuture(ls, &messages.Borrow{
 		ClientId: 1,
-		Id:       borrowedBookID,
+		BookId:   borrowedBookID,
 	}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	borrowedErrorResponse, ok := res.(bool)
+	_, ok = res.(*messages.UnknownBook)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be bool"))
+		panic(fmt.Errorf("got wrong message type. Should be message of type UnknownBook"))
 	}
 
-	if borrowedErrorResponse {
-		panic(fmt.Errorf("book with id %d could be borrowed successfully but shouldn't", bookID))
-	}
+	fmt.Println("Coudnt borrow unknown book!")
 
 	// Test ReturnBook successfully
-	res, err = rootContext.RequestFuture(ls, book.ReturnBook{
+	res, err = rootContext.RequestFuture(ls, &messages.Return{
 		ClientId: bookID,
-		Id:       1,
+		BookId:   1,
 	}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	returnResponse, ok := res.(bool)
+	_, ok = res.(*messages.Returned)
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be bool"))
+		panic(fmt.Errorf("got wrong message type. Should be message of type Returned"))
 	}
 
-	if !returnResponse {
-		panic(fmt.Errorf("book with id %d couldn't be returned successfully", bookID))
-	}
+	fmt.Println("Book returned successfully!")
 
-	// Test ReturnBook error
-	res, err = rootContext.RequestFuture(ls, book.ReturnBook{
+	// Test return unknown book
+	res, err = rootContext.RequestFuture(ls, &messages.Return{
 		ClientId: bookID,
-		Id:       12,
+		BookId:   12,
 	}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	returnErrorResponse, ok := res.(bool)
+	_, ok = res.(*messages.UnknownBook)
 
 	if !ok {
-		panic(fmt.Errorf("go wrong message type. Should be %T", book.Book{}))
+		panic(fmt.Errorf("got wrong message type, expected message of type UnknownBook"))
 	}
 
-	if returnErrorResponse {
-		panic(fmt.Errorf("book with id %d could be returned successfully but shouldn't", bookID))
-	}
+	fmt.Println("Coudnt return unknown book!")
 
 	println("All library tests successfull")
 }

@@ -2,6 +2,7 @@ package book
 
 import (
 	"fmt"
+	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages"
 
 	"github.com/asynkron/protoactor-go/actor"
 )
@@ -14,58 +15,58 @@ type bookServiceActor struct {
 func (state *bookServiceActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
-		newBook := Book{
-			id:        1,
-			title:     "Worm",
-			author:    []string{"Wildbow"},
-			available: 2,
-			borrowed:  3,
+		newBook := &messages.Book{
+			Id:        1,
+			Author:    []string{"Wildbow"},
+			Title:     "Worm",
+			Available: 2,
+			Borrowed:  3,
 		}
 		bookActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 			return &bookActor{book: newBook}
 		}))
 		state.bookActors = make(map[uint32]*actor.PID)
-		state.bookActors[newBook.id] = bookActor
+		state.bookActors[newBook.Id] = bookActor
 		fmt.Println("Book Service: Initialized")
-	case GetInformation:
+	case *messages.GetInformation:
 		// returns information of all registered books
 		helper := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 			return &informationHelper{bookActors: state.bookActors}
 		}))
-		ctx.RequestWithCustomSender(helper, GetInformationHelper{}, ctx.Sender())
+		ctx.RequestWithCustomSender(helper, &messages.GetInformation{}, ctx.Sender())
 		fmt.Println("Book Service: Dispatch information helper")
-	case ReturnBook:
+	case *messages.Return:
 		// checks if book exists and requests 'Borrow'
-		bookId, bookExists := state.bookActors[msg.Id]
+		bookId, bookExists := state.bookActors[msg.BookId]
 		if bookExists {
 			fmt.Println("Book Service: Borrow book from actor")
-			ctx.RequestWithCustomSender(bookId, ReturnBook{Id: msg.Id, ClientId: msg.ClientId}, ctx.Sender())
+			ctx.RequestWithCustomSender(bookId, &messages.Return{BookId: msg.BookId, ClientId: msg.ClientId}, ctx.Sender())
 		} else {
 			fmt.Println("Book Service: Book not known")
-			ctx.Respond(false)
+			ctx.Respond(&messages.UnknownBook{})
 		}
-	case BorrowBook:
+	case *messages.Borrow:
 		// checks if book exists and requests 'Return'
-		bookId, bookExists := state.bookActors[msg.Id]
+		bookId, bookExists := state.bookActors[msg.BookId]
 		if bookExists {
-			ctx.RequestWithCustomSender(bookId, BorrowBook{Id: msg.Id, ClientId: msg.ClientId}, ctx.Sender())
+			ctx.RequestWithCustomSender(bookId, &messages.Borrow{BookId: msg.BookId, ClientId: msg.ClientId}, ctx.Sender())
 			fmt.Println("Book Service: Return book to actor")
 		} else {
 			fmt.Println("Book Service: Book not known")
-			ctx.Respond(false)
+			ctx.Respond(&messages.UnknownBook{})
 		}
-	case NewBook:
-		_, bookExists := state.bookActors[msg.Book.id]
+	case *messages.NewBook:
+		_, bookExists := state.bookActors[msg.Book.Id]
 		if !bookExists {
 			newActor := ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 				return &bookActor{book: msg.Book}
 			}))
-			state.bookActors[msg.Book.id] = newActor
+			state.bookActors[msg.Book.Id] = newActor
 			fmt.Println("Book Service: Added new book")
-			ctx.Respond(true)
+			ctx.Respond(&messages.BookCreated{})
 		} else {
 			fmt.Println("Book Service: Coudnt add new book, book already exists with given id")
-			ctx.Respond(false)
+			ctx.Respond(&messages.BookExists{})
 		}
 	default:
 		print("Unknown message. %T\n", msg)
@@ -74,31 +75,4 @@ func (state *bookServiceActor) Receive(ctx actor.Context) {
 
 func NewBookService() actor.Actor {
 	return &bookServiceActor{}
-}
-
-// #####################################
-// #     Messages for Book Service     #
-// #####################################
-
-// GetInformation message to collect information about all books
-type GetInformation struct {
-}
-
-// Information message holding information about single book
-type Information struct {
-	response Book
-	actorPID *actor.PID
-}
-
-// UnknownBook message if book does not exist
-type UnknownBook struct {
-}
-
-// NotAvailable message that wanted book is not available (all copies borrowed)
-type NotAvailable struct {
-}
-
-// NewBook message to add a new book what will spawn new BookActor
-type NewBook struct {
-	Book Book
 }

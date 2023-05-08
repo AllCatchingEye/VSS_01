@@ -2,100 +2,46 @@ package book
 
 import (
 	"fmt"
-
 	"github.com/asynkron/protoactor-go/actor"
+	"gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages"
 )
-
-type Book struct {
-	id        uint32
-	author    []string
-	title     string
-	available uint32
-	borrowed  uint32
-}
 
 // represents a book
 type bookActor struct {
-	book Book
+	book *messages.Book
 }
 
 func (state *bookActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case GetInformationOfBook:
+	case *messages.GetInformation:
 		fmt.Println("Book Actor: Information requested")
-		ctx.Respond(Information{response: state.book, actorPID: ctx.Self()})
-	case BorrowBook:
-		if state.book.available > 0 {
-			state.book.available -= 1
-			state.book.borrowed += 1
+		ctx.Respond(InformationFound{book: state.book, sender: ctx.Self()})
+	case *messages.Borrow:
+		if state.book.Available > 0 {
+			state.book.Available -= 1
+			state.book.Borrowed += 1
 			fmt.Println("Book Actor: Book borrowed")
 			ctx.Respond(state.book)
 		} else {
 			fmt.Println("Book Actor: Coudn't borrow, no book available right now")
-			ctx.Respond(false)
+			ctx.Respond(&messages.NotAvailable{})
 		}
-	case ReturnBook:
-		if state.book.borrowed > 0 {
-			state.book.available += 1
-			state.book.borrowed -= 1
+	case *messages.Return:
+		if state.book.Borrowed > 0 {
+			state.book.Available += 1
+			state.book.Borrowed -= 1
 			fmt.Println("Book Actor: Book returned")
-			ctx.Respond(true)
+			ctx.Respond(&messages.Returned{})
 		} else {
 			fmt.Println("Book Actor: Coudn't return, no book was borrowed")
-			ctx.Respond(false)
+			ctx.Respond(&messages.NotAvailable{})
 		}
 	default:
 		fmt.Printf("got a message of type %T\n", msg)
 	}
 }
 
-func CreateNewBook(id uint32, author []string, title string, available uint32, borrowed uint32) Book {
-	return Book{
-		id:        id,
-		author:    author,
-		title:     title,
-		available: available,
-		borrowed:  borrowed,
-	}
-}
-
-func (x *Book) GetId() uint32 {
-	if x != nil {
-		return x.id
-	}
-	return 0
-}
-
-func (x *Book) GetTitle() string {
-	if x != nil {
-		return x.title
-	}
-	return ""
-}
-
-func (x *Book) GetAuthors() []string {
-	if x != nil {
-		return x.author
-	}
-	return []string{}
-}
-
-// #####################################
-// #         Messages for Book         #
-// #####################################
-
-// BorrowBook message to borrow book
-type BorrowBook struct {
-	ClientId uint32
-	Id       uint32
-}
-
-// ReturnBook message to return book
-type ReturnBook struct {
-	ClientId uint32
-	Id       uint32
-}
-
-// GetInformationOfBook message to collect information about this book
-type GetInformationOfBook struct {
+type InformationFound struct {
+	book   *messages.Book
+	sender *actor.PID
 }

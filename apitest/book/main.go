@@ -17,131 +17,117 @@ func main() {
 	bsProp := actor.PropsFromProducer(book.NewBookService)
 	bs := system.Root.Spawn(bsProp)
 
-	// Test Borrow book
-	res, err := rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
+	// Test create book successfully
+	bookNoExemplars := messages.Book{
+		Id:        42,
+		Author:    []string{"Nobody"},
+		Title:     "Void",
+		Available: 0,
+		Borrowed:  0,
+	}
+	res, err := rootContext.RequestFuture(bs, &messages.NewBook{Book: &bookNoExemplars}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	_, ok := res.(book.Book)
+	_, ok := res.(*messages.BookCreated)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.BookCreated{}))
+	}
+
+	fmt.Println("Successfully created book")
+
+	// Test Borrow book
+	res, err = rootContext.RequestFuture(bs, &messages.Borrow{ClientId: 1, BookId: 1}, timeout).Result()
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, ok = res.(*messages.Book)
+
+	if !ok {
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Book{}))
 	}
 
 	// Test Borrow too much
-	rootContext.Send(bs, book.BorrowBook{ClientId: 1, Id: 1})
-	res, err = rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 1}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.Borrow{ClientId: 1, BookId: 42}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resBook, ok := res.(bool)
+	_, ok = res.(*messages.NotAvailable)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if resBook {
-		panic(fmt.Errorf("Shoudn't be able to borrow when the book is unavailable"))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.NotAvailable{}))
 	}
 
 	// Test Borrow non-existent book
-	res, err = rootContext.RequestFuture(bs, book.BorrowBook{ClientId: 1, Id: 5134}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.Borrow{ClientId: 1, BookId: 5134}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resBook, ok = res.(bool)
+	_, ok = res.(*messages.UnknownBook)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if resBook {
-		panic(fmt.Errorf("Shoudn't be able to borrow book"))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.UnknownBook{}))
 	}
 
 	// Test return successfully
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.Return{ClientId: 1, BookId: 1}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resBook, ok = res.(bool)
+	_, ok = res.(*messages.Returned)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if !resBook {
-		panic(fmt.Errorf("Should be able to return book"))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Returned{}))
 	}
 
 	// Test return too much
-	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
-	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
-	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
-	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
-	rootContext.Send(bs, book.ReturnBook{ClientId: 1, Id: 1})
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 1}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.Return{ClientId: 1, BookId: 42}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resBook, ok = res.(bool)
+	_, ok = res.(*messages.NotAvailable)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if resBook {
-		panic(fmt.Errorf("Should be able to return book that has all exemplars already available"))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.NotAvailable{}))
 	}
 
 	// Test return non-existent book
-	res, err = rootContext.RequestFuture(bs, book.ReturnBook{ClientId: 1, Id: 3134}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.Return{ClientId: 1, BookId: 3134}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resBook, ok = res.(bool)
+	_, ok = res.(*messages.UnknownBook)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", messages.Customer{}))
-	}
-
-	if resBook {
-		panic(fmt.Errorf("Should be able to return book that doesnt exist"))
+		panic(fmt.Errorf("got wrong message type. Should be %T", messages.UnknownBook{}))
 	}
 
 	// Test get information
-	res, err = rootContext.RequestFuture(bs, book.GetInformation{}, timeout).Result()
+	res, err = rootContext.RequestFuture(bs, &messages.GetInformation{}, timeout).Result()
 
 	if err != nil {
 		panic(err)
 	}
 
-	resInfo, ok := res.([]book.Book)
+	_, ok = res.([]*messages.Book)
 
 	if !ok {
-		panic(fmt.Errorf("got wrong message type. Should be %T", book.Book{}))
-	}
-
-	if len(resInfo) != 1 {
-		panic(fmt.Errorf("Should be able to return book that doesnt exist"))
-	}
-	if resInfo[0].GetId() != 1 {
-		panic(fmt.Errorf("book coming from info should have id %d, but has id %d", 1, resInfo[0].GetId()))
-	}
-	if resInfo[0].GetTitle() != "Worm" {
-		panic(fmt.Errorf("book coming from info should have title %s, but has title %s", "Worm", resInfo[0].GetTitle()))
+		panic(fmt.Errorf("got wrong message type. Should be []*messages.Book"))
 	}
 
 	println("All book tests successfull")

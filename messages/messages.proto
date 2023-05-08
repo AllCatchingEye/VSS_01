@@ -25,12 +25,13 @@ message Book {
 
 // UnknownBook message if book does not exist
 message UnknownBook {
-    bool res = 1;
 }
 
 // NotAvailable message that wanted book is not available (all copies borrowed)
 message NotAvailable {
-    bool res = 1;
+}
+
+message Returned {
 }
 
 // NewBook message to add a new book what will spawn new BookActor
@@ -38,12 +39,38 @@ message NewBook {
     Book book = 1;
 }
 
+message BookCreated {
+}
+
+message BookExists {
+
+}
+
+message SameCustomer {
+
+}
+
+message Borrow {
+    uint32 clientId = 1;
+    uint32 bookId = 2;
+}
+
+message Return {
+    uint32 clientId = 1;
+    uint32 bookId = 2;
+}
+message GetInformation {
+
+}
+
+message Information {
+    Book    bookInformation = 1;
+}
+
 // Library
 message LibAddCustomer {
     string Name = 1;
 }
 
-message LibAddServices {
-    string cs = 1;
-    string bs = 2;
+message TransFinished {
 }
