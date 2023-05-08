@@ -3,13 +3,47 @@ package messages;
 option go_package = "gitlab.lrz.de/vss/semester/ob-23ss/blatt-1/blatt1-grp06/messages";
 
 // Customer
-
 message Customer {
   uint32 id = 1;
   string name = 2;
 }
+
 message NewCustomer { string name = 1; }
 
 message GetCustomer { uint32 id = 1; }
 
 message CustomerNotFound { uint32 id = 1; }
+
+// Book
+message Book {
+    uint32 id = 1;
+    repeated string author = 2;
+    string title = 3;
+    uint32 available = 4;
+    uint32 borrowed = 5;
+}
+
+// UnknownBook message if book does not exist
+message UnknownBook {
+    bool res = 1;
+}
+
+// NotAvailable message that wanted book is not available (all copies borrowed)
+message NotAvailable {
+    bool res = 1;
+}
+
+// NewBook message to add a new book what will spawn new BookActor
+message NewBook {
+    Book book = 1;
+}
+
+// Library
+message LibAddCustomer {
+    string Name = 1;
+}
+
+message LibAddServices {
+    string cs = 1;
+    string bs = 2;
+}
