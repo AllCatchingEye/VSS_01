@@ -59,3 +59,16 @@ Die Änderungen muss nur einer aus dem Team committen und pushen.
 Wenn alles passt, dann committen und pushen Sie jetzt. In Ihrem GitLab-Projekt
 wird Ihr Projekt jetzt von [Golangci-lint](https://github.com/golangci/golangci-lint)
 überprüft, die Tests werden ausgeführt.
+
+## Ausführen der Services
+
+Öffne ein neues Terminal-Fenster und navigiere in das Verzeichnis des jeweiligen Service.
+Anschließend kannst du den Service mit `go run service/main.go` starten.
+
+Dies führt man zunächst für den Book-Service und anschließend für den Customer-Service aus.
+Erst danach für den Library-Service.
+
+Als letzes startet man den miniClient mit `go run client/miniClient.go`.
+
+Das Buch wird erfolgreich ausgeliehen, wenn die Ausgabe des miniClients wie folgt aussieht:
+`Got book:  Worm`
