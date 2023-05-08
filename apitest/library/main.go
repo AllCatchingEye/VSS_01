@@ -62,7 +62,7 @@ func main() {
 		panic(err)
 	}
 
-	res, ok = resBook.(*messages.BookCreated)
+	_, ok = resBook.(*messages.BookCreated)
 
 	if !ok {
 		panic(fmt.Errorf("got wrong message type, expected message of type BookCreated"))
@@ -77,7 +77,7 @@ func main() {
 		panic(err)
 	}
 
-	res, ok = resBook.(*messages.BookExists)
+	_, ok = resBook.(*messages.BookExists)
 
 	if !ok {
 		panic(fmt.Errorf("got wrong message type, expected message of type BookExists"))
